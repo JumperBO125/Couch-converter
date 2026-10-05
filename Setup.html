@@ -1,0 +1,378 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tekken 8 Remapper Profile Generator</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #121214;
+            color: #e1e1e6;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 900px;
+            width: 100%;
+            background: #202024;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #00ffcc;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #8d8d99;
+            margin-bottom: 20px;
+        }
+
+        /* PlayStation Translation Guide Layout */
+        .translation-guide {
+            background: #1a1a1e;
+            border: 1px solid #29292e;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 25px;
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .guide-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .xbox-badge {
+            background: #107c10;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-family: monospace;
+        }
+
+        .ps-badge {
+            background: #00439c;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .action-row {
+            display: flex;
+            flex-direction: column;
+            background: #29292e;
+            padding: 12px 15px;
+            border-radius: 6px;
+            border: 1px solid #323238;
+            gap: 8px;
+        }
+
+        .action-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .action-label {
+            font-weight: 600;
+            color: #c4c4cc;
+        }
+
+        .ps-hint {
+            font-size: 12px;
+            color: #8d8d99;
+            font-style: italic;
+        }
+
+        .binding-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            min-height: 35px;
+            background: #121214;
+            padding: 5px;
+            border-radius: 4px;
+            border: 1px dashed #444;
+            align-items: center;
+        }
+
+        .tag {
+            background: #00ffcc;
+            color: #121214;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-family: monospace;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .tag-remove {
+            cursor: pointer;
+            color: #ff3333;
+            font-weight: bold;
+        }
+
+        .key-input-btn {
+            background: #202024;
+            color: #8d8d99;
+            border: 1px solid #444;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s ease;
+            font-size: 13px;
+        }
+
+            .key-input-btn:focus, .key-input-btn.listening {
+                outline: none;
+                border-color: #00ffcc;
+                color: #00ffcc;
+                background: #121214;
+            }
+
+        .btn-container {
+            margin-top: 30px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .download-btn {
+            background: #00ffcc;
+            color: #121214;
+            border: none;
+            padding: 12px 30px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+            .download-btn:hover {
+                background: #00cc99;
+            }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Profile Layout Configurator</h1>
+        <div class="subtitle">Multi-binding mode active. Add multiple keys per button, or reuse keys across mappings.</div>
+
+        <!-- PlayStation Reference Tooltip Bar -->
+        <div class="translation-guide">
+            <div class="guide-item"><span class="xbox-badge">A</span> ➔ <span class="ps-badge">✕ Cross</span></div>
+            <div class="guide-item"><span class="xbox-badge">B</span> ➔ <span class="ps-badge">◯ Circle</span></div>
+            <div class="guide-item"><span class="xbox-badge">X</span> ➔ <span class="ps-badge">▢ Square</span></div>
+            <div class="guide-item"><span class="xbox-badge">Y</span> ➔ <span class="ps-badge">△ Triangle</span></div>
+            <div class="guide-item"><span class="xbox-badge">LB / RB</span> ➔ <span class="ps-badge">L1 / R1</span></div>
+            <div class="guide-item"><span class="xbox-badge">LT / RT</span> ➔ <span class="ps-badge">L2 / R2</span></div>
+        </div>
+
+        <div class="grid" id="binding-grid"></div>
+
+        <div class="btn-container">
+            <button class="download-btn" onclick="downloadConfigFile()">Export layout.cfg</button>
+        </div>
+    </div>
+
+    <script>
+        // Actions matching the C++ Enum indices exactly
+        const actions = [
+            { name: "Button A", ps: "✕ Cross (Kick 3)" },
+            { name: "Button B", ps: "◯ Circle (Kick 4)" },
+            { name: "Button X", ps: "▢ Square (Punch 1)" },
+            { name: "Button Y", ps: "△ Triangle (Punch 2)" },
+            { name: "Left Shoulder (LB)", ps: "L1" },
+            { name: "Right Shoulder (RB)", ps: "R1" },
+            { name: "Start", ps: "Options / Share" },
+            { name: "Back", ps: "Touchpad Press" },
+            { name: "Left Thumb Click", ps: "L3" },
+            { name: "Right Thumb Click", ps: "R3" },
+            { name: "D-Pad Up", ps: "D-Pad Up" },
+            { name: "D-Pad Down", ps: "D-Pad Down" },
+            { name: "D-Pad Left", ps: "D-Pad Left" },
+            { name: "D-Pad Right", ps: "D-Pad Right" },
+            { name: "Left Stick X+", ps: "LS Right" },
+            { name: "Left Stick X-", ps: "LS Left" },
+            { name: "Left Stick Y+", ps: "LS Up" },
+            { name: "Left Stick Y-", ps: "LS Down" },
+            { name: "Right Stick X+", ps: "RS Right" },
+            { name: "Right Stick X-", ps: "RS Left" },
+            { name: "Right Stick Y+", ps: "RS Up" },
+            { name: "Right Stick Y-", ps: "RS Down" },
+            { name: "Left Trigger", ps: "L2" },
+            { name: "Right Trigger", ps: "R2" }
+        ];
+
+        const scanCodeLookup = {
+            "Escape": 1, "F1": 59, "F2": 60, "F3": 61, "F4": 62, "F5": 63, "F6": 64, "F7": 65, "F8": 66, "F9": 67, "F10": 68, "F11": 87, "F12": 88,
+            "Backquote": 41, "Digit1": 2, "Digit2": 3, "Digit3": 4, "Digit4": 5, "Digit5": 6, "Digit6": 7, "Digit7": 8, "Digit8": 9, "Digit9": 10, "Digit0": 11, "Minus": 12, "Equal": 13, "Backspace": 14,
+            "Tab": 15, "KeyQ": 16, "KeyW": 17, "KeyE": 18, "KeyR": 19, "KeyT": 20, "KeyY": 21, "KeyU": 22, "KeyI": 23, "KeyO": 24, "KeyP": 25, "BracketLeft": 26, "BracketRight": 27, "Backslash": 43,
+            "CapsLock": 58, "KeyA": 30, "KeyS": 31, "KeyD": 32, "KeyF": 33, "KeyG": 34, "KeyH": 35, "KeyJ": 36, "KeyK": 37, "KeyL": 38, "Semicolon": 39, "Quote": 40, "Enter": 28,
+            "ShiftLeft": 42, "KeyZ": 44, "KeyX": 45, "KeyC": 46, "KeyV": 47, "KeyB": 48, "KeyN": 49, "KeyM": 50, "Comma": 51, "Period": 52, "Slash": 53, "ShiftRight": 54,
+            "ControlLeft": 29, "MetaLeft": 91, "AltLeft": 56, "Space": 57, "AltRight": 56, "MetaRight": 92, "ContextMenu": 93, "ControlRight": 29,
+
+            "ArrowUp": 328, "ArrowDown": 336, "ArrowLeft": 331, "ArrowRight": 333,
+            "Insert": 338, "Delete": 339, "Home": 327, "End": 335, "PageUp": 329, "PageDown": 337,
+            "PrintScreen": 311, "ScrollLock": 70, "Pause": 69,
+
+            "NumLock": 69,
+            "Numpad7": 71, "Numpad8": 72, "Numpad9": 73, "NumpadMinus": 74,
+            "Numpad4": 75, "Numpad5": 76, "Numpad6": 77, "NumpadPlus": 78,
+            "Numpad1": 79, "Numpad2": 80, "Numpad3": 81,
+            "Numpad0": 82, "NumpadDecimal": 83,
+            "NumpadDivide": 309, "NumpadMultiply": 55, "NumpadEnter": 284
+        };
+
+        // State array containing arrays of bound values per index
+        let currentBindings = Array.from({ length: actions.length }, () => []);
+
+        const grid = document.getElementById('binding-grid');
+
+        actions.forEach((action, index) => {
+            const row = document.createElement('div');
+            row.className = 'action-row';
+
+            const header = document.createElement('div');
+            header.className = 'action-header';
+
+            const label = document.createElement('div');
+            label.className = 'action-label';
+            label.innerText = action.name;
+
+            const hint = document.createElement('div');
+            hint.className = 'ps-hint';
+            hint.innerText = action.ps;
+
+            header.appendChild(label);
+            header.appendChild(hint);
+
+            const tagsContainer = document.createElement('div');
+            tagsContainer.className = 'binding-tags';
+            tagsContainer.id = `tags-${index}`;
+
+            const inputBtn = document.createElement('button');
+            inputBtn.className = 'key-input-btn';
+            inputBtn.innerText = "+ Click to Bind Key";
+
+            inputBtn.addEventListener('click', () => {
+                document.querySelectorAll('.key-input-btn').forEach(b => b.classList.remove('listening'));
+                inputBtn.classList.add('listening');
+                inputBtn.innerText = "[ Listening... ]";
+            });
+
+            // Capture inputs globally when an entry field is active
+            window.addEventListener('keydown', (e) => {
+                if (!inputBtn.classList.contains('listening')) return;
+
+                e.preventDefault();
+                e.stopPropagation();
+
+                const codeString = e.code;
+                let finalCode = scanCodeLookup[codeString];
+
+                if (!finalCode) {
+                    if (e.key === "ArrowUp") finalCode = 328;
+                    else if (e.key === "ArrowDown") finalCode = 336;
+                    else if (e.key === "ArrowLeft") finalCode = 331;
+                    else if (e.key === "ArrowRight") finalCode = 333;
+                    else return;
+                }
+
+                // Add the binding if it doesn't already exist for this action (Rule 1 & Rule 2 preservation)
+                if (!currentBindings[index].includes(finalCode)) {
+                    currentBindings[index].push(finalCode);
+                    renderTags(index, tagsContainer);
+                }
+
+                inputBtn.classList.remove('listening');
+                inputBtn.innerText = "+ Click to Bind Key";
+            });
+
+            row.appendChild(header);
+            row.appendChild(tagsContainer);
+            row.appendChild(inputBtn);
+            grid.appendChild(row);
+        });
+
+        function renderTags(index, container) {
+            container.innerHTML = "";
+            if (currentBindings[index].length === 0) {
+                container.innerHTML = '<span style="color: #444; font-size: 12px; margin-left: 5px;">Empty</span>';
+                return;
+            }
+
+            currentBindings[index].forEach((code) => {
+                // Find matching name text
+                let keyName = Object.keys(scanCodeLookup).find(k => scanCodeLookup[k] === code) || `Code ${code}`;
+                keyName = keyName.replace("Key", "").replace("Digit", "Num ");
+                if (keyName.startsWith("Numpad")) keyName = "Num " + keyName.replace("Numpad", "");
+
+                const tag = document.createElement('span');
+                tag.className = 'tag';
+                tag.innerHTML = `${keyName} <span class="tag-remove">&times;</span>`;
+
+                tag.querySelector('.tag-remove').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    currentBindings[index] = currentBindings[index].filter(c => c !== code);
+                    renderTags(index, container);
+                });
+
+                container.appendChild(tag);
+            });
+        }
+
+        // Build standard comma-separated output format compatible with the C++ parser loop
+        function downloadConfigFile() {
+            let fileContent = "";
+            currentBindings.forEach((codesArray, index) => {
+                if (codesArray.length > 0) {
+                    fileContent += `${index}=${codesArray.join(',')}\n`;
+                }
+            });
+
+            if (fileContent === "") {
+                alert("Please map at least one key before exporting!");
+                return;
+            }
+
+            const blob = new Blob([fileContent], { type: 'text/plain' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'layout.cfg';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+
+</body>
+</html>
